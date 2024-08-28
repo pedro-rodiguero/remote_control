@@ -1,9 +1,12 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton, QFileDialog, QMessageBox, QComboBox, QDialog, QFormLayout
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QPixmap
 import requests
 import os
+import time
+import qrcode
+import socket
 
 class DragDropLabel(QLabel):
     def __init__(self, parent=None, app_instance=None):
@@ -24,12 +27,39 @@ class DragDropLabel(QLabel):
             if os.path.isfile(file_path):
                 self.app_instance.upload_file(file_path)
 
+
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.254.254.254', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+def generate_qr_code(url):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill='black', back_color='white')
+    qr_path = "qr_code.png"
+    img.save(qr_path)
+    return qr_path
+
 class App(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Presentation Software")
         self.setGeometry(100, 100, 600, 400)
-
         self.initUI()
 
     def initUI(self):
@@ -91,8 +121,27 @@ class App(QMainWindow):
         dialog.exec_()
 
     def generate_qr_code(self):
-        # Implement QR code generation functionality
-        pass
+        ip = get_local_ip()
+        url = f"http://{ip}:5000"
+        qr_path = generate_qr_code(url)
+        self.show_qr_code(qr_path)
+
+    def show_qr_code(self, qr_path):
+        qr_window = QDialog(self)
+        qr_window.setWindowTitle("QR Code")
+        qr_window.setGeometry(100, 100, 300, 300)
+
+        try:
+            pixmap = QPixmap(qr_path)
+            label = QLabel(qr_window)
+            label.setPixmap(pixmap)
+            label.setAlignment(Qt.AlignCenter)
+            layout = QVBoxLayout()
+            layout.addWidget(label)
+            qr_window.setLayout(layout)
+            qr_window.exec_()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to load QR code image: {e}")
 
     def upload_presentation(self):
         file_path = QFileDialog.getOpenFileName(self, "Select Presentation", "", "PDF files (*.pdf);;All files (*.*)")[0]

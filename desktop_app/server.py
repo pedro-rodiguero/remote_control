@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 from gui import app_instance  # Ensure this import is correct
 from utils import get_local_ip
 import os
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -11,6 +12,9 @@ CORS(app)
 # Configure the upload folder
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Dictionary to store filenames and their upload timestamps
+uploaded_files = {}
 
 @app.route('/get_ip', methods=['GET'])
 def get_ip():
@@ -40,9 +44,11 @@ def upload_presentation():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
+        filename = 'presentation.pdf'  # Fixed filename to ensure overwrite
         file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return jsonify({'status': 'ok', 'filename': filename}), 200
+        timestamp = time.time()
+        uploaded_files[filename] = timestamp
+        return jsonify({'status': 'ok', 'filename': filename, 'timestamp': timestamp}), 200
     else:
         return jsonify({'error': 'File type not allowed'}), 400
 
