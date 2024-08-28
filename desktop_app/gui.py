@@ -1,8 +1,12 @@
+# gui.py
+
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 from screen_cast import start_physical_cast, stop_physical_cast
 from utils import generate_qr_code, get_local_ip
 from PIL import Image, ImageTk
+import requests
+import os
 
 class App:
     def __init__(self, master):
@@ -29,6 +33,33 @@ class App:
 
         self.qr_button = ttk.Button(self.main_menu_frame, text="Generate QR Code", command=self.generate_qr_code)
         self.qr_button.pack(pady=10)
+
+        self.upload_button = ttk.Button(self.main_menu_frame, text="Upload Presentation", command=self.upload_presentation)
+        self.upload_button.pack(pady=10)
+
+        self.drag_drop_label = tk.Label(self.main_menu_frame, text="Drag and drop files here", relief="solid", width=40, height=10)
+        self.drag_drop_label.pack(pady=10)
+
+        # Bind drag and drop events
+        self.drag_drop_label.bind("<ButtonPress-1>", self.drag_start)
+        self.drag_drop_label.bind("<B1-Motion>", self.drag_motion)
+        self.drag_drop_label.bind("<ButtonRelease-1>", self.drag_drop)
+
+    def drag_start(self, event):
+        self.drag_data = {"x": event.x, "y": event.y}
+
+    def drag_motion(self, event):
+        x = self.master.winfo_pointerx() - self.drag_data["x"]
+        y = self.master.winfo_pointery() - self.drag_data["y"]
+        self.master.geometry(f"+{x}+{y}")
+
+    def drag_drop(self, event):
+        file_path = filedialog.askopenfilename(
+            title="Select Presentation",
+            filetypes=(("PDF files", "*.pdf"), ("All files", "*.*"))
+        )
+        if file_path:
+            self.upload_file(file_path)
 
     def open_screen_selection(self):
         self.screen_selection_window = tk.Toplevel(self.master)
@@ -88,7 +119,26 @@ class App:
         qr_label.image = qr_photo  # Keep a reference to avoid garbage collection
         qr_label.pack(pady=10)
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    def upload_presentation(self):
+        # Open the file dialog to select a presentation file
+        file_path = filedialog.askopenfilename(
+            title="Select Presentation",
+            filetypes=(("PDF files", "*.pdf"), ("All files", "*.*"))
+        )
+        if file_path:
+            self.upload_file(file_path)
+
+    def upload_file(self, file_path):
+        try:
+            with open(file_path, 'rb') as file:
+                response = requests.post('http://localhost:5000/upload_presentation', files={'file': file})
+            if response.status_code == 200:
+                messagebox.showinfo("Success", "Presentation uploaded successfully!")
+            else:
+                messagebox.showerror("Error", f"Failed to upload presentation: {response.json().get('error', 'Unknown error')}")
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {str(e)}")
+
+# Define app_instance
+root = tk.Tk()
+app_instance = App(root)
