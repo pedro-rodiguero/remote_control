@@ -5,7 +5,7 @@ import qrcode  # type: ignore
 import socket
 import os
 from PIL import Image, ImageTk
-
+import pynq  # NDI library
 
 class App:
     def __init__(self, root):
@@ -31,10 +31,10 @@ class App:
         )
         self.qr_button.pack(pady=10)
 
-        self.menu_button = tk.Button(
-            self.root, text="Show Menu", command=self.show_menu
+        self.screen_button = tk.Button(
+            self.root, text="Show Screen", command=self.show_screen
         )
-        self.menu_button.pack(pady=10)
+        self.screen_button.pack(pady=10)
 
     def next_slide(self):
         pyautogui.press("right")
@@ -66,9 +66,10 @@ class App:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load QR code image: {e}")
 
-    def show_menu(self):
-        pyautogui.position()
-        (300, 50)
+    def show_screen(self):
+        # Start NDI stream
+        ndi_sender = pynq.NDISender("Screen Stream")
+        ndi_sender.send_screen()
 
     def get_local_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
