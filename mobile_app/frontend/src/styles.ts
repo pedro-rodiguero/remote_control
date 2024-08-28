@@ -46,6 +46,25 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
   },
+  camera: {
+    flex: 1,
+    width: '100%',
+  },
+  buttonContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    margin: 20,
+  },
+  text: {
+    fontSize: 18,
+    color: 'white',
+  },
+  message: {
+    fontSize: 18,
+    textAlign: 'center',
+    margin: 10,
+  },
 });
 
 export default styles;

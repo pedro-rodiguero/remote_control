@@ -5,7 +5,9 @@ import qrcode  # type: ignore
 import socket
 import os
 from PIL import Image, ImageTk
-import pynq  # NDI library
+from flask import Flask, jsonify
+
+app = Flask(__name__)
 
 class App:
     def __init__(self, root):
@@ -71,7 +73,8 @@ class App:
         ndi_sender = pynq.NDISender("Screen Stream")
         ndi_sender.send_screen()
 
-    def get_local_ip(self):
+    @staticmethod
+    def get_local_ip():
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         try:
             s.connect(("10.254.254.254", 1))
@@ -82,8 +85,13 @@ class App:
             s.close()
         return ip
 
+@app.route('/get_ip', methods=['GET'])
+def get_ip():
+    ip = App.get_local_ip()
+    return jsonify({'ip': ip})
 
 if __name__ == "__main__":
     root = tk.Tk()
     app = App(root)
     root.mainloop()
+    app.run(host='0.0.0.0', port=5000)
