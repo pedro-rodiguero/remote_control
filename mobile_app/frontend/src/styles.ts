@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
-  logo: {
+  icon: {
     position: 'absolute',
     top: 40,
     right: 20,
