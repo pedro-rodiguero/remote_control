@@ -1,41 +1,30 @@
 import React, { useState } from 'react';
-import { Text, View, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { WebView } from 'react-native-webview';
 import axios from 'axios';
-import styles from './styles'; // Import the styles
-import { WebView } from 'react-native-webview'; // Import WebView
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons from @expo/vector-icons
+import { handleNextSlide, handlePrevSlide, handleShowScreen } from './api';
 
-export default function App() {
+const App = () => {
   const [showScreen, setShowScreen] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
-  const handleNextSlide = async () => {
-    try {
-      await axios.get('http://localhost:5000/next'); // Change to church computer's IP address
-      Alert.alert('Moved to Next Slide');
-    } catch (error) {
-      Alert.alert('Error moving to next slide');
-    }
-  };
-
-  const handlePrevSlide = async () => {
-    try {
-      await axios.get('http://localhost:5000/prev'); // Change to church computer's IP address
-      Alert.alert('Moved to Previous Slide');
-    } catch (error) {
-      Alert.alert('Error moving to previous slide');
-    }
-  };
-
-  const handleShowScreen = async () => {
-    try {
-      await axios.get('http://localhost:5000/show_screen'); // Change to church computer's IP address
-      setShowScreen(true);
-    } catch (error) {
-      Alert.alert('Error showing screen');
-    }
+  const toggleMenu = () => {
+    setIsMenuVisible(!isMenuVisible);
   };
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.menuButton} onPress={toggleMenu}>
+        <Ionicons name="menu" size={32} color="black" />
+      </TouchableOpacity>
+      {isMenuVisible && (
+        <View style={styles.sideMenu}>
+          <Text style={styles.menuItem}>Menu Item 1</Text>
+          <Text style={styles.menuItem}>Menu Item 2</Text>
+          <Text style={styles.menuItem}>Menu Item 3</Text>
+        </View>
+      )}
       {showScreen ? (
         <WebView source={{ uri: 'http://localhost:5000/screen' }} style={{ flex: 1 }} /> // Change to church computer's IP address
       ) : (
@@ -53,4 +42,44 @@ export default function App() {
       )}
     </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuButton: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+  },
+  sideMenu: {
+    position: 'absolute',
+    top: 80,
+    left: 0,
+    width: 200,
+    backgroundColor: 'white',
+    padding: 10,
+    borderColor: 'black',
+    borderWidth: 1,
+  },
+  menuItem: {
+    padding: 10,
+    borderBottomColor: 'black',
+    borderBottomWidth: 1,
+  },
+  button: {
+    margin: 10,
+    padding: 10,
+    backgroundColor: 'blue',
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+});
+
+export default App;
