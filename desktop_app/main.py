@@ -6,8 +6,12 @@ import socket
 import os
 from PIL import Image, ImageTk
 from flask import Flask, jsonify
+from flask_cors import CORS
+import threading
+
 
 app = Flask(__name__)
+CORS(app) 
 
 class App:
     def __init__(self, root):
@@ -47,6 +51,7 @@ class App:
     def generate_qr(self):
         ip = self.get_local_ip()
         url = f"http://{ip}:5000"
+        print(f"Generated URL: {url}")  # Debug statement
         qr = qrcode.make(url)
         qr_path = os.path.join(os.getcwd(), "qrcode.png")
         qr.save(qr_path)
@@ -90,8 +95,15 @@ def get_ip():
     ip = App.get_local_ip()
     return jsonify({'ip': ip})
 
+def run_flask_app():
+    app.run(host='0.0.0.0', port=5000)
+
 if __name__ == "__main__":
+    # Start Flask server in a separate thread
+    flask_thread = threading.Thread(target=run_flask_app)
+    flask_thread.daemon = True
+    flask_thread.start()
+
     root = tk.Tk()
     app = App(root)
     root.mainloop()
-    app.run(host='0.0.0.0', port=5000)
