@@ -4,6 +4,7 @@ import { WebView } from 'react-native-webview';
 import axios from 'axios';
 import { Ionicons } from '@expo/vector-icons'; // Import Ionicons from @expo/vector-icons
 import { handleNextSlide, handlePrevSlide, handleShowScreen } from './api';
+import styles from './styles';
 
 const App = () => {
   const [showScreen, setShowScreen] = useState(false);
@@ -43,43 +44,5 @@ const App = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuButton: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-  },
-  sideMenu: {
-    position: 'absolute',
-    top: 80,
-    left: 0,
-    width: 200,
-    backgroundColor: 'white',
-    padding: 10,
-    borderColor: 'black',
-    borderWidth: 1,
-  },
-  menuItem: {
-    padding: 10,
-    borderBottomColor: 'black',
-    borderBottomWidth: 1,
-  },
-  button: {
-    margin: 10,
-    padding: 10,
-    backgroundColor: 'blue',
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-  },
-});
 
 export default App;
