@@ -37,7 +37,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       {showScreen ? (
-        <WebView source={{ uri: 'http://localhost:5000/screen' }} style={{ flex: 1 }} />
+        <WebView source={{ uri: 'http://localhost:5000/screen' }} style={{ flex: 1 }} /> // Change to church computer's IP address
       ) : (
         <>
           <TouchableOpacity style={styles.button} onPress={handleNextSlide} activeOpacity={0.7}>
