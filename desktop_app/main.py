@@ -11,7 +11,7 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("Remote Control Application")
-        self.root.geometry("300x200")
+        self.root.geometry("300x250")
 
         self.create_widgets()
 
@@ -31,13 +31,16 @@ class App:
         )
         self.qr_button.pack(pady=10)
 
+        self.menu_button = tk.Button(
+            self.root, text="Show Menu", command=self.show_menu
+        )
+        self.menu_button.pack(pady=10)
+
     def next_slide(self):
         pyautogui.press("right")
-        messagebox.showinfo("Info", "Moved to Next Slide")
 
     def prev_slide(self):
         pyautogui.press("left")
-        messagebox.showinfo("Info", "Moved to Previous Slide")
 
     def generate_qr(self):
         ip = self.get_local_ip()
@@ -62,6 +65,10 @@ class App:
             label.pack(pady=10)
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load QR code image: {e}")
+
+    def show_menu(self):
+        pyautogui.position()
+        (300, 50)
 
     def get_local_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
