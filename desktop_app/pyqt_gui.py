@@ -1,12 +1,12 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton, QFileDialog, QMessageBox, QComboBox, QDialog, QFormLayout
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton, QFileDialog, QMessageBox, QComboBox, QDialog, QFormLayout, QHBoxLayout, QGridLayout
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
-import requests
-import os
-import time
 import qrcode
 import socket
+import sys
+from pptx import Presentation
+from pptx.util import Inches
+from PIL import Image
 
 class DragDropLabel(QLabel):
     def __init__(self, parent=None, app_instance=None):
@@ -24,10 +24,7 @@ class DragDropLabel(QLabel):
     def dropEvent(self, event):
         for url in event.mimeData().urls():
             file_path = url.toLocalFile()
-            if os.path.isfile(file_path):
-                self.app_instance.upload_file(file_path)
-
-
+            self.app_instance.upload_file(file_path)
 
 def get_local_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -60,38 +57,73 @@ class App(QMainWindow):
         super().__init__()
         self.setWindowTitle("Presentation Software")
         self.setGeometry(100, 100, 600, 400)
+        self.presentation_uploaded = False  # Flag to track if a presentation is uploaded
+        self.current_slide_index = 0
+        self.slides = []
         self.initUI()
 
     def initUI(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        layout = QVBoxLayout()
+        self.layout = QVBoxLayout()
+
+        self.home_button = QPushButton("Home", self)
+        self.home_button.clicked.connect(self.show_home)
+        self.layout.addWidget(self.home_button)
 
         self.start_button = QPushButton("Start Casting", self)
         self.start_button.clicked.connect(self.start_casting)
-        layout.addWidget(self.start_button)
+        self.layout.addWidget(self.start_button)
 
         self.stop_button = QPushButton("Stop Casting", self)
         self.stop_button.clicked.connect(self.stop_casting)
-        layout.addWidget(self.stop_button)
+        self.layout.addWidget(self.stop_button)
 
         self.select_screen_button = QPushButton("Select Output Screen", self)
         self.select_screen_button.clicked.connect(self.open_screen_selection)
-        layout.addWidget(self.select_screen_button)
+        self.layout.addWidget(self.select_screen_button)
 
         self.qr_button = QPushButton("Generate QR Code", self)
         self.qr_button.clicked.connect(self.generate_qr_code)
-        layout.addWidget(self.qr_button)
+        self.layout.addWidget(self.qr_button)
 
         self.upload_button = QPushButton("Upload Presentation", self)
         self.upload_button.clicked.connect(self.upload_presentation)
-        layout.addWidget(self.upload_button)
+        self.layout.addWidget(self.upload_button)
 
         self.drag_drop_label = DragDropLabel(self, app_instance=self)
-        layout.addWidget(self.drag_drop_label)
+        self.layout.addWidget(self.drag_drop_label)
 
-        central_widget.setLayout(layout)
+        self.grid_layout = QGridLayout()
+        self.layout.addLayout(self.grid_layout)
+
+        if self.presentation_uploaded:
+            self.init_grid_layout()
+        else:
+            self.drag_drop_label.show()
+
+        central_widget.setLayout(self.layout)
+
+    def init_grid_layout(self):
+        self.clear_grid_layout()
+
+        # Add labels for the grid layout
+        self.current_slide_label = QLabel("Current Slide")
+        self.current_slide_label.setStyleSheet("font-weight: bold;")
+        self.grid_layout.addWidget(self.current_slide_label, 0, 0, 1, 2)
+
+        self.current_slide_image = QLabel()
+        self.current_slide_image.setStyleSheet("border: 1px solid black;")
+        self.grid_layout.addWidget(self.current_slide_image, 1, 0, 1, 2)
+
+        self.prev_slide_button = QPushButton("Previous Slide")
+        self.prev_slide_button.clicked.connect(self.prev_slide)
+        self.grid_layout.addWidget(self.prev_slide_button, 2, 0)
+
+        self.next_slide_button = QPushButton("Next Slide")
+        self.next_slide_button.clicked.connect(self.next_slide)
+        self.grid_layout.addWidget(self.next_slide_button, 2, 1)
 
     def start_casting(self):
         # Implement start casting functionality
@@ -144,20 +176,62 @@ class App(QMainWindow):
             QMessageBox.critical(self, "Error", f"Failed to load QR code image: {e}")
 
     def upload_presentation(self):
-        file_path = QFileDialog.getOpenFileName(self, "Select Presentation", "", "PDF files (*.pdf);;All files (*.*)")[0]
+        file_path = QFileDialog.getOpenFileName(self, "Select Presentation", "", "PDF files (*.pdf);;PowerPoint files (*.pptx);;All files (*.*)")[0]
         if file_path:
             self.upload_file(file_path)
+            self.presentation_uploaded = True
+            self.update_ui_after_upload()
 
     def upload_file(self, file_path):
         try:
-            with open(file_path, 'rb') as file:
-                response = requests.post('http://localhost:5000/upload_presentation', files={'file': file})
-            if response.status_code == 200:
-                QMessageBox.information(self, "Success", "Presentation uploaded successfully!")
+            if file_path.endswith('.pptx'):
+                self.load_pptx(file_path)
             else:
-                QMessageBox.critical(self, "Error", f"Failed to upload presentation: {response.json().get('error', 'Unknown error')}")
+                # Implement the logic to upload the file to the server
+                pass
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to upload file: {e}")
+
+    def load_pptx(self, file_path):
+        presentation = Presentation(file_path)
+        self.slides = []
+        for slide in presentation.slides:
+            image = slide.shapes.add_picture(file_path, Inches(0), Inches(0))
+            self.slides.append(image)
+        self.show_slide(0)
+
+    def show_slide(self, index):
+        if 0 <= index < len(self.slides):
+            self.current_slide_index = index
+            slide_image = self.slides[index]
+            pixmap = QPixmap(slide_image)
+            self.current_slide_image.setPixmap(pixmap)
+
+    def update_ui_after_upload(self):
+        self.select_screen_button.hide()
+        self.upload_button.hide()
+        self.drag_drop_label.hide()
+        self.init_grid_layout()
+
+    def show_home(self):
+        self.select_screen_button.show()
+        self.upload_button.show()
+        self.drag_drop_label.show()
+        self.presentation_uploaded = False
+        self.clear_grid_layout()
+
+    def clear_grid_layout(self):
+        while self.grid_layout.count():
+            item = self.grid_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+    def prev_slide(self):
+        self.show_slide(self.current_slide_index - 1)
+
+    def next_slide(self):
+        self.show_slide(self.current_slide_index + 1)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
